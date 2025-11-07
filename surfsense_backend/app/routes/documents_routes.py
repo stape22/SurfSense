@@ -55,12 +55,17 @@ async def create_documents(
 
             for individual_document in request.content:
                 # Convert document to dict for Celery serialization
+                # Pass full metadata as the extension processor expects ExtensionDocumentContent
                 document_dict = {
                     "metadata": {
-                        "VisitedWebPageTitle": individual_document.metadata.VisitedWebPageTitle,
+                        "BrowsingSessionId": individual_document.metadata.BrowsingSessionId,
                         "VisitedWebPageURL": individual_document.metadata.VisitedWebPageURL,
+                        "VisitedWebPageTitle": individual_document.metadata.VisitedWebPageTitle,
+                        "VisitedWebPageDateWithTimeInISOString": individual_document.metadata.VisitedWebPageDateWithTimeInISOString,
+                        "VisitedWebPageReffererURL": individual_document.metadata.VisitedWebPageReffererURL,
+                        "VisitedWebPageVisitDurationInMilliseconds": individual_document.metadata.VisitedWebPageVisitDurationInMilliseconds,
                     },
-                    "content": individual_document.content,
+                    "pageContent": individual_document.pageContent,  # Extension sends pageContent
                 }
                 process_extension_document_task.delay(
                     document_dict, request.search_space_id, str(user.id)

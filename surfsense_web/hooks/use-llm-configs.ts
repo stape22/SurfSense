@@ -60,26 +60,46 @@ export function useLLMConfigs(searchSpaceId: number | null) {
 
 		try {
 			setLoading(true);
-			const response = await fetch(
-				`${process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL}/api/v1/llm-configs?search_space_id=${searchSpaceId}`,
-				{
-					headers: {
-						Authorization: `Bearer ${localStorage.getItem("surfsense_bearer_token")}`,
-					},
-					method: "GET",
-				}
-			);
+			const backendUrl = process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL;
+			if (!backendUrl) {
+				throw new Error("NEXT_PUBLIC_FASTAPI_BACKEND_URL is not set");
+			}
+
+			const url = `${backendUrl}/api/v1/llm-configs?search_space_id=${searchSpaceId}`;
+			const token = localStorage.getItem("surfsense_bearer_token");
+			
+			if (!token) {
+				throw new Error("Authentication token not found");
+			}
+
+			const response = await fetch(url, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+				method: "GET",
+			});
 
 			if (!response.ok) {
-				throw new Error("Failed to fetch LLM configurations");
+				const errorText = await response.text();
+				let errorMessage = `Failed to fetch LLM configurations: ${response.status} ${response.statusText}`;
+				try {
+					const errorData = JSON.parse(errorText);
+					errorMessage = errorData.detail || errorMessage;
+				} catch {
+					// If parsing fails, use default message
+				}
+				throw new Error(errorMessage);
 			}
 
 			const data = await response.json();
 			setLlmConfigs(data);
 			setError(null);
 		} catch (err: any) {
-			setError(err.message || "Failed to fetch LLM configurations");
+			const errorMessage = err.message || "Failed to fetch LLM configurations";
+			setError(errorMessage);
 			console.error("Error fetching LLM configurations:", err);
+			console.error("Backend URL:", process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL);
+			console.error("Search Space ID:", searchSpaceId);
 		} finally {
 			setLoading(false);
 		}

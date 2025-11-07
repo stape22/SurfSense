@@ -278,18 +278,32 @@ const HomePage = () => {
 		});
 
 		try {
+			console.log("Sending savedata message to background script...");
 			const resp = await sendToBackground({
 				// @ts-ignore
 				name: "savedata",
 			});
 
-			toast({
-				title: resp.message,
-			});
-		} catch (error) {
+			console.log("Response from background:", resp);
+
+			if (resp.error) {
+				console.error("Error from background:", resp.error);
+				toast({
+					title: "Error saving data",
+					description: resp.error,
+					variant: "destructive",
+				});
+			} else {
+				console.log("Success! Message:", resp.message);
+				toast({
+					title: resp.message || "Save Job Started",
+				});
+			}
+		} catch (error: any) {
+			console.error("Error sending message to background:", error);
 			toast({
 				title: "Error saving data",
-				description: "Please try again",
+				description: error?.message || "Please try again",
 				variant: "destructive",
 			});
 		} finally {

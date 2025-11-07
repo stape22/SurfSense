@@ -19,10 +19,6 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 
-// YouTube video ID validation regex
-const youtubeRegex =
-	/^(https:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})$/;
-
 export default function YouTubeVideoAdder() {
 	const t = useTranslations("add_youtube");
 	const params = useParams();
@@ -34,9 +30,10 @@ export default function YouTubeVideoAdder() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	// Function to validate a YouTube URL
+	// Function to validate a YouTube URL - checks if we can extract a valid video ID
 	const isValidYoutubeUrl = (url: string): boolean => {
-		return youtubeRegex.test(url);
+		// Use extractVideoId to validate - if we can extract an ID, it's valid
+		return extractVideoId(url) !== null;
 	};
 
 	// Function to extract video ID from URL
@@ -89,7 +86,16 @@ export default function YouTubeVideoAdder() {
 			);
 
 			if (!response.ok) {
-				throw new Error("Failed to process YouTube videos");
+				// Try to extract error message from backend response
+				let errorMessage = "Failed to process YouTube videos";
+				try {
+					const errorData = await response.json();
+					errorMessage = errorData.detail || errorData.message || errorMessage;
+				} catch {
+					// If response is not JSON, use status text
+					errorMessage = response.statusText || errorMessage;
+				}
+				throw new Error(errorMessage);
 			}
 
 			await response.json();
@@ -101,9 +107,10 @@ export default function YouTubeVideoAdder() {
 			// Redirect to documents page
 			router.push(`/dashboard/${search_space_id}/documents`);
 		} catch (error: any) {
-			setError(error.message || t("error_generic"));
+			const errorMessage = error.message || t("error_generic");
+			setError(errorMessage);
 			toast(t("error_toast"), {
-				description: `${t("error_toast_desc")}: ${error.message}`,
+				description: `${t("error_toast_desc")}: ${errorMessage}`,
 			});
 		} finally {
 			setIsSubmitting(false);

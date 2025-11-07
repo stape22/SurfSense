@@ -92,6 +92,18 @@ if config.AUTH_TYPE == "GOOGLE":
 app.include_router(crud_router, prefix="/api/v1", tags=["crud"])
 
 
+@app.get("/")
+async def root():
+    """Root endpoint with API information."""
+    return {
+        "message": "SurfSense API is running",
+        "version": "0.0.8",
+        "docs": "/docs",
+        "api": "/api/v1",
+        "health": "/verify-token"
+    }
+
+
 @app.get("/verify-token")
 async def authenticated_route(
     user: User = Depends(current_active_user),

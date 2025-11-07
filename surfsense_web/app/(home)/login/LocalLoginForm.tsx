@@ -35,27 +35,39 @@ export function LocalLoginForm() {
 		const loadingToast = toast.loading(tCommon("loading"));
 
 		try {
+			const backendUrl = process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL;
+			if (!backendUrl) {
+				throw new Error("Backend URL not configured. Please restart the frontend server.");
+			}
+
 			// Create form data for the API request
 			const formData = new URLSearchParams();
 			formData.append("username", username);
 			formData.append("password", password);
 			formData.append("grant_type", "password");
 
-			const response = await fetch(
-				`${process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL}/auth/jwt/login`,
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/x-www-form-urlencoded",
-					},
-					body: formData.toString(),
-				}
-			);
+			const url = `${backendUrl}/auth/jwt/login`;
+			const response = await fetch(url, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded",
+				},
+				body: formData.toString(),
+			});
 
-			const data = await response.json();
+			let data;
+			try {
+				data = await response.json();
+			} catch (parseError) {
+				// If response is not JSON, it might be a network error
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+				}
+				throw new Error("Invalid response from server");
+			}
 
 			if (!response.ok) {
-				throw new Error(data.detail || `HTTP ${response.status}`);
+				throw new Error(data.detail || `HTTP ${response.status}: ${response.statusText}`);
 			}
 
 			// Success toast

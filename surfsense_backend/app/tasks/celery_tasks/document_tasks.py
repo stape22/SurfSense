@@ -63,19 +63,11 @@ async def _process_extension_document(
     individual_document_dict, search_space_id: int, user_id: str
 ):
     """Process extension document with new session."""
-    from pydantic import BaseModel
+    from app.schemas.documents import ExtensionDocumentContent
 
-    # Reconstruct the document object from dict
-    # You'll need to define the proper model for this
-    class DocumentMetadata(BaseModel):
-        VisitedWebPageTitle: str
-        VisitedWebPageURL: str
-
-    class IndividualDocument(BaseModel):
-        metadata: DocumentMetadata
-        content: str
-
-    individual_document = IndividualDocument(**individual_document_dict)
+    # Reconstruct the ExtensionDocumentContent from dict
+    # The dict has full metadata and pageContent field
+    individual_document = ExtensionDocumentContent(**individual_document_dict)
 
     async with get_celery_session_maker()() as session:
         task_logger = TaskLoggingService(session, search_space_id)
