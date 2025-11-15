@@ -21,7 +21,11 @@ const AUTH_ERROR_MESSAGES: AuthErrorMapping = {
 	},
 	"404": {
 		title: "Account not found",
-		description: "No account exists with this email address",
+		description: "No account exists with this email address. Did you mean to register instead?",
+	},
+	ACCOUNT_NOT_FOUND: {
+		title: "Account not found",
+		description: "No account exists with this email address. Did you mean to register instead?",
 	},
 	"409": {
 		title: "Account conflict",

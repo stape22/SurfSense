@@ -6,6 +6,7 @@ import { I18nProvider } from "@/components/providers/I18nProvider";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { LocaleProvider } from "@/contexts/LocaleContext";
+import { ErrorHandler } from "@/components/error-handler";
 import { cn } from "@/lib/utils";
 
 const roboto = Roboto({
@@ -90,6 +91,7 @@ export default function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body className={cn(roboto.className, "bg-white dark:bg-black antialiased h-full w-full")}>
+				<ErrorHandler />
 				<LocaleProvider>
 					<I18nProvider>
 						<ThemeProvider

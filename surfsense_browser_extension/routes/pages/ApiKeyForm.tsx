@@ -64,8 +64,17 @@ const ApiKeyForm = () => {
 					<div className="space-y-6">
 						<h2 className="text-xl font-medium text-white">Enter your API Key</h2>
 						<p className="text-gray-400 text-sm">
-							Your API key connects this extension to the SurfSense.
+							Your API key connects this extension to SurfSense. This is the same JWT token you get when logging into the web dashboard.
 						</p>
+						<div className="bg-gray-900/50 border border-gray-700 rounded-md p-3 text-xs text-gray-400">
+							<p className="font-medium text-gray-300 mb-1">How to get your API key:</p>
+							<ol className="list-decimal list-inside space-y-1 ml-2">
+								<li>Log in to the SurfSense web dashboard</li>
+								<li>Open browser DevTools (F12) → Application tab → Local Storage</li>
+								<li>Copy the value of <code className="bg-gray-800 px-1 rounded">surfsense_bearer_token</code></li>
+								<li>Paste it here</li>
+							</ol>
+						</div>
 
 						<form onSubmit={handleSubmit} className="space-y-4">
 							<div className="space-y-2">
@@ -99,7 +108,7 @@ const ApiKeyForm = () => {
 							</Button>
 						</form>
 
-						<div className="text-center mt-4">
+						<div className="text-center mt-4 space-y-2">
 							<p className="text-sm text-gray-400">
 								Need an API key?{" "}
 								<a
@@ -109,6 +118,17 @@ const ApiKeyForm = () => {
 									rel="noopener"
 								>
 									Sign up
+								</a>
+							</p>
+							<p className="text-xs text-gray-500">
+								Or get it from your dashboard:{" "}
+								<a
+									href={`${process.env.PLASMO_PUBLIC_BACKEND_URL?.replace('/api/v1', '').replace('/api', '') || 'http://localhost:3001'}/dashboard/api-key`}
+									target="_blank"
+									className="text-teal-400 hover:text-teal-300 hover:underline"
+									rel="noopener"
+								>
+									View API Key
 								</a>
 							</p>
 						</div>

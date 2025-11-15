@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import Depends, Request, Response
@@ -13,6 +14,9 @@ from pydantic import BaseModel
 
 from app.config import config
 from app.db import User, get_user_db
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 
 class BearerResponse(BaseModel):
@@ -36,6 +40,11 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     verification_token_secret = SECRET
 
     async def on_after_register(self, user: User, request: Request | None = None):
+        """Called after a user successfully registers."""
+        logger.info(
+            f"User registered successfully: id={user.id}, email={user.email}, "
+            f"is_active={user.is_active}, is_verified={user.is_verified}"
+        )
         print(f"User {user.id} has registered.")
 
     async def on_after_forgot_password(

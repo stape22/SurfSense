@@ -82,26 +82,100 @@ export default function RegisterPage() {
 			}
 
 			if (!response.ok) {
+				// Log registration failure for debugging
+				console.error("Registration failed:", {
+					status: response.status,
+					detail: data.detail,
+					email: email,
+				});
 				throw new Error(data.detail || `HTTP ${response.status}`);
 			}
 
-			// Success toast
-			toast.success(t("register_success"), {
-				id: loadingToast,
-				description: t("redirecting_login"),
-				duration: 2000,
-			});
+			// Log successful registration
+			console.log("Registration successful, attempting auto-login:", { email });
 
-			// Small delay to show success message
-			setTimeout(() => {
-				router.push("/login?registered=true");
-			}, 500);
+			// Auto-login: Immediately log in the user after successful registration
+			try {
+				const formData = new URLSearchParams();
+				formData.append("username", email);
+				formData.append("password", password);
+				formData.append("grant_type", "password");
+
+				const loginResponse = await fetch(
+					`${process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL}/auth/jwt/login`,
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/x-www-form-urlencoded",
+						},
+						body: formData.toString(),
+					}
+				);
+
+				const loginData = await loginResponse.json();
+
+				if (!loginResponse.ok) {
+					console.error("Auto-login failed after registration:", {
+						status: loginResponse.status,
+						detail: loginData.detail,
+					});
+					// If auto-login fails, redirect to login page with success message
+					toast.success(t("register_success"), {
+						id: loadingToast,
+						description: t("redirecting_login"),
+						duration: 2000,
+					});
+					setTimeout(() => {
+						router.push("/login?registered=true");
+					}, 500);
+					return;
+				}
+
+				// Success toast
+				toast.success(t("register_success"), {
+					id: loadingToast,
+					description: "Logging you in...",
+					duration: 2000,
+				});
+
+				// Store token and redirect to dashboard
+				setTimeout(() => {
+					router.push(`/auth/callback?token=${loginData.access_token}`);
+				}, 500);
+			} catch (loginErr) {
+				console.error("Error during auto-login:", loginErr);
+				// Fallback: redirect to login page
+				toast.success(t("register_success"), {
+					id: loadingToast,
+					description: t("redirecting_login"),
+					duration: 2000,
+				});
+				setTimeout(() => {
+					router.push("/login?registered=true");
+				}, 500);
+			}
 		} catch (err) {
+			// Log error for debugging
+			console.error("Registration error:", err);
+
 			// Use auth-errors utility to get proper error details
 			let errorCode = "UNKNOWN_ERROR";
 
 			if (err instanceof Error) {
 				errorCode = err.message;
+				// Check for specific error types
+				if (err.message.includes("already exists") || err.message.includes("already registered")) {
+					errorCode = "EMAIL_EXISTS";
+					setErrorTitle("Email Already Registered");
+					setError("An account with this email already exists. Please try logging in instead.");
+					toast.error("Email Already Registered", {
+						id: loadingToast,
+						description: "An account with this email already exists. Please try logging in.",
+						duration: 6000,
+					});
+					setIsLoading(false);
+					return;
+				}
 			} else if (isNetworkError(err)) {
 				errorCode = "NETWORK_ERROR";
 			}

@@ -67,6 +67,30 @@ export function LocalLoginForm() {
 			}
 
 			if (!response.ok) {
+				// Log login failure for debugging
+				console.error("Login failed:", {
+					status: response.status,
+					detail: data.detail,
+					email: username,
+				});
+
+				// Distinguish between account not found and wrong password
+				if (response.status === 401 || response.status === 400) {
+					// Check if it's specifically "user not found" vs "wrong password"
+					const errorDetail = data.detail?.toLowerCase() || "";
+					if (
+						errorDetail.includes("not found") ||
+						errorDetail.includes("does not exist") ||
+						errorDetail.includes("no user")
+					) {
+						// Account doesn't exist
+						throw new Error("ACCOUNT_NOT_FOUND");
+					} else {
+						// Wrong password
+						throw new Error("LOGIN_BAD_CREDENTIALS");
+					}
+				}
+
 				throw new Error(data.detail || `HTTP ${response.status}: ${response.statusText}`);
 			}
 
@@ -82,6 +106,9 @@ export function LocalLoginForm() {
 				router.push(`/auth/callback?token=${data.access_token}`);
 			}, 500);
 		} catch (err) {
+			// Log error for debugging
+			console.error("Login error:", err);
+
 			// Use auth-errors utility to get proper error details
 			let errorCode = "UNKNOWN_ERROR";
 
@@ -94,9 +121,17 @@ export function LocalLoginForm() {
 			// Get detailed error information from auth-errors utility
 			const errorDetails = getAuthErrorDetails(errorCode);
 
-			// Set persistent error display
-			setErrorTitle(errorDetails.title);
-			setError(errorDetails.description);
+			// Special handling for account not found
+			if (errorCode === "ACCOUNT_NOT_FOUND") {
+				setErrorTitle("Account Not Found");
+				setError(
+					"No account exists with this email address. Did you mean to register instead?"
+				);
+			} else {
+				// Set persistent error display
+				setErrorTitle(errorDetails.title);
+				setError(errorDetails.description);
+			}
 
 			// Show error toast with conditional retry action
 			const toastOptions: any = {
@@ -207,12 +242,20 @@ export function LocalLoginForm() {
 				</div>
 
 				<div>
-					<label
-						htmlFor="password"
-						className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-					>
-						{t("password")}
-					</label>
+					<div className="flex items-center justify-between">
+						<label
+							htmlFor="password"
+							className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+						>
+							{t("password")}
+						</label>
+						<Link
+							href="/forgot-password"
+							className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400"
+						>
+							{t("forgot_password")}
+						</Link>
+					</div>
 					<div className="relative">
 						<input
 							id="password"

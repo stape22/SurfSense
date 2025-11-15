@@ -8,6 +8,7 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from app.config import config
 from app.db import User, create_db_and_tables, get_async_session
 from app.routes import router as crud_router
+from app.routes.users_routes import router as custom_users_router
 from app.schemas import UserCreate, UserRead, UserUpdate
 from app.users import SECRET, auth_backend, current_active_user, fastapi_users
 
@@ -90,6 +91,9 @@ if config.AUTH_TYPE == "GOOGLE":
     )
 
 app.include_router(crud_router, prefix="/api/v1", tags=["crud"])
+
+# Include custom users routes for account verification
+app.include_router(custom_users_router, tags=["users"])
 
 
 @app.get("/")
