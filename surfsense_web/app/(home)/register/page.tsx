@@ -51,7 +51,43 @@ export default function RegisterPage() {
 		const loadingToast = toast.loading(t("creating_account"));
 
 		try {
-			const response = await fetch(`${process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL}/auth/register`, {
+			const backendUrl = process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL;
+			
+			// Debug logging
+			console.log("Registration attempt:", {
+				backendUrl: backendUrl || "NOT SET",
+				hasBackendUrl: !!backendUrl,
+			});
+			
+			if (!backendUrl) {
+				const errorMsg = `Backend URL not configured!
+
+For DEVELOPMENT:
+1. Create surfsense_web/.env file with:
+   NEXT_PUBLIC_FASTAPI_BACKEND_URL=http://localhost:8000
+2. Restart dev server: pnpm run dev
+
+For PRODUCTION BUILD:
+Rebuild with env vars: pnpm run build`;
+				console.error("Registration error - Backend URL not set:", {
+					envVar: process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL,
+					isUndefined: typeof process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL === 'undefined',
+				});
+				setErrorTitle("Configuration Error");
+				setError(errorMsg);
+				toast.error("Configuration Error", {
+					id: loadingToast,
+					description: "NEXT_PUBLIC_FASTAPI_BACKEND_URL is not set. Check console for details.",
+					duration: 10000,
+				});
+				setIsLoading(false);
+				return;
+			}
+
+			const registerUrl = `${backendUrl}/auth/register`;
+			console.log("Attempting registration at:", registerUrl);
+			
+			const response = await fetch(registerUrl, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -65,7 +101,17 @@ export default function RegisterPage() {
 				}),
 			});
 
-			const data = await response.json();
+			let data;
+			try {
+				data = await response.json();
+			} catch (parseError) {
+				// If response is not JSON, it might be a network error
+				console.error("Registration error - failed to parse response:", parseError);
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+				}
+				throw new Error("Invalid response from server");
+			}
 
 			if (!response.ok && response.status === 403) {
 				const friendlyMessage =
@@ -102,7 +148,7 @@ export default function RegisterPage() {
 				formData.append("grant_type", "password");
 
 				const loginResponse = await fetch(
-					`${process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL}/auth/jwt/login`,
+					`${backendUrl}/auth/jwt/login`,
 					{
 						method: "POST",
 						headers: {
@@ -157,6 +203,29 @@ export default function RegisterPage() {
 		} catch (err) {
 			// Log error for debugging
 			console.error("Registration error:", err);
+			
+			// Check if it's a network/fetch error
+			if (err instanceof TypeError && (err.message.includes("fetch") || err.message.includes("Failed to fetch"))) {
+				const backendUrl = process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL || "http://localhost:8000";
+				const errorMsg = `Failed to connect to backend server at ${backendUrl}. Please ensure:
+1. The backend is running (check http://localhost:8000)
+2. NEXT_PUBLIC_FASTAPI_BACKEND_URL is set correctly
+3. There are no CORS issues`;
+				console.error("Network error details:", {
+					error: err,
+					message: err.message,
+					backendUrl: backendUrl,
+				});
+				setErrorTitle("Connection Error");
+				setError(errorMsg);
+				toast.error("Connection Error", {
+					id: loadingToast,
+					description: `Cannot reach backend at ${backendUrl}. Is it running?`,
+					duration: 8000,
+				});
+				setIsLoading(false);
+				return;
+			}
 
 			// Use auth-errors utility to get proper error details
 			let errorCode = "UNKNOWN_ERROR";

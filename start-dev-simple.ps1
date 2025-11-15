@@ -9,8 +9,8 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot
 Start-Sleep -Seconds 2
 
 # Start Frontend
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\surfsense_web'; `$env:PORT='3001'; pnpm run dev"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\surfsense_web'; `$env:PORT='4000'; pnpm run dev"
 
 Write-Host "Services started!" -ForegroundColor Green
 Write-Host "  Backend:  http://localhost:8000" -ForegroundColor Cyan
-Write-Host "  Frontend: http://localhost:3001" -ForegroundColor Cyan
+Write-Host "  Frontend: http://localhost:4000" -ForegroundColor Cyan

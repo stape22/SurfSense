@@ -36,8 +36,36 @@ export function LocalLoginForm() {
 
 		try {
 			const backendUrl = process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL;
+			
+			// Debug logging
+			console.log("Login attempt:", {
+				backendUrl: backendUrl || "NOT SET",
+				hasBackendUrl: !!backendUrl,
+			});
+			
 			if (!backendUrl) {
-				throw new Error("Backend URL not configured. Please restart the frontend server.");
+				const errorMsg = `Backend URL not configured!
+
+For DEVELOPMENT:
+1. Create surfsense_web/.env file with:
+   NEXT_PUBLIC_FASTAPI_BACKEND_URL=http://localhost:8000
+2. Restart dev server: pnpm run dev
+
+For PRODUCTION BUILD:
+Rebuild with env vars: pnpm run build`;
+				console.error("Login error - Backend URL not set:", {
+					envVar: process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL,
+					isUndefined: typeof process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL === 'undefined',
+				});
+				setErrorTitle("Configuration Error");
+				setError(errorMsg);
+				toast.error("Configuration Error", {
+					id: loadingToast,
+					description: "NEXT_PUBLIC_FASTAPI_BACKEND_URL is not set. Check console for details.",
+					duration: 10000,
+				});
+				setIsLoading(false);
+				return;
 			}
 
 			// Create form data for the API request
@@ -47,19 +75,41 @@ export function LocalLoginForm() {
 			formData.append("grant_type", "password");
 
 			const url = `${backendUrl}/auth/jwt/login`;
-			const response = await fetch(url, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/x-www-form-urlencoded",
-				},
-				body: formData.toString(),
-			});
+			console.log("Attempting login at:", url);
+			
+			let response;
+			try {
+				response = await fetch(url, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/x-www-form-urlencoded",
+					},
+					body: formData.toString(),
+				});
+			} catch (fetchError) {
+				// Network error - backend not reachable
+				console.error("Login fetch error:", fetchError);
+				const errorMsg = `Failed to connect to backend server at ${backendUrl}. Please ensure:
+1. The backend is running (check http://localhost:8000)
+2. NEXT_PUBLIC_FASTAPI_BACKEND_URL is set correctly
+3. There are no CORS issues`;
+				setErrorTitle("Connection Error");
+				setError(errorMsg);
+				toast.error("Connection Error", {
+					id: loadingToast,
+					description: `Cannot reach backend at ${backendUrl}. Is it running?`,
+					duration: 8000,
+				});
+				setIsLoading(false);
+				return;
+			}
 
 			let data;
 			try {
 				data = await response.json();
 			} catch (parseError) {
 				// If response is not JSON, it might be a network error
+				console.error("Login parse error:", parseError);
 				if (!response.ok) {
 					throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 				}

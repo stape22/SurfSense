@@ -31,8 +31,8 @@ if (Test-Port -Port 8000) {
     }
 }
 
-if (Test-Port -Port 3001) {
-    Write-Host "  ⚠️  Port 3001 (Frontend) is already in use" -ForegroundColor Yellow
+if (Test-Port -Port 4000) {
+    Write-Host "  ⚠️  Port 4000 (Frontend) is already in use" -ForegroundColor Yellow
     $response = Read-Host "  Do you want to continue anyway? (y/n)"
     if ($response -ne "y") {
         exit 0
@@ -51,8 +51,8 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot
 Start-Sleep -Seconds 2
 
 # Start Frontend Server
-Write-Host "🚀 Starting Frontend Server (port 3001)..." -ForegroundColor Cyan
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\surfsense_web'; Write-Host 'Frontend Server - Port 3001' -ForegroundColor Green; Write-Host 'Press Ctrl+C to stop' -ForegroundColor Yellow; Write-Host ''; `$env:PORT='3001'; pnpm run dev"
+Write-Host "🚀 Starting Frontend Server (port 4000)..." -ForegroundColor Cyan
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\surfsense_web'; Write-Host 'Frontend Server - Port 4000' -ForegroundColor Green; Write-Host 'Press Ctrl+C to stop' -ForegroundColor Yellow; Write-Host ''; `$env:PORT='4000'; pnpm run dev"
 
 # Ask about Celery services
 Write-Host ""
@@ -84,7 +84,7 @@ Write-Host ""
 Write-Host "Services running:" -ForegroundColor White
 Write-Host "  • Backend API:    http://localhost:8000" -ForegroundColor Cyan
 Write-Host "  • API Docs:       http://localhost:8000/docs" -ForegroundColor Cyan
-Write-Host "  • Frontend:       http://localhost:3001" -ForegroundColor Cyan
+Write-Host "  • Frontend:       http://localhost:4000" -ForegroundColor Cyan
 if ($startCelery -eq "y" -or $startCelery -eq "Y") {
     Write-Host "  • Celery Worker:  Running" -ForegroundColor Cyan
     Write-Host "  • Celery Beat:    Running" -ForegroundColor Cyan

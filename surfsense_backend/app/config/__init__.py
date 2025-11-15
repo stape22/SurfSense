@@ -95,6 +95,13 @@ class Config:
 
     # Database
     DATABASE_URL = os.getenv("DATABASE_URL")
+    
+    if not DATABASE_URL:
+        import warnings
+        warnings.warn(
+            "DATABASE_URL is not set! Database connections will fail. "
+            "Set DATABASE_URL in your .env file (e.g., postgresql+asyncpg://postgres:postgres@localhost:5432/surfsense)"
+        )
 
     NEXT_FRONTEND_URL = os.getenv("NEXT_FRONTEND_URL")
     # Backend URL to override the http to https in the OAuth redirect URI

@@ -451,10 +451,63 @@ async def setup_indexes():
 
 
 async def create_db_and_tables():
-    async with engine.begin() as conn:
-        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        await conn.run_sync(Base.metadata.create_all)
-    await setup_indexes()
+    """Create database tables and extensions. Handles connection errors gracefully."""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Log database connection info (mask password)
+    db_url_display = DATABASE_URL
+    if "@" in db_url_display:
+        parts = db_url_display.split("@")
+        if ":" in parts[0]:
+            user_pass = parts[0].split("://")[1] if "://" in parts[0] else parts[0]
+            if ":" in user_pass:
+                user, _ = user_pass.split(":", 1)
+                db_url_display = db_url_display.replace(f":{user_pass.split(':')[1]}", ":****")
+    
+    logger.info(f"Connecting to database: {db_url_display}")
+    
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            await conn.run_sync(Base.metadata.create_all)
+        await setup_indexes()
+        logger.info("Database tables and extensions created successfully")
+    except OSError as e:
+        # Extract port from error or DATABASE_URL
+        port = "unknown"
+        if "5433" in str(e) or "5432" in str(e):
+            port = "5433" if "5433" in str(e) else "5432"
+        elif "@" in DATABASE_URL:
+            try:
+                host_part = DATABASE_URL.split("@")[1].split("/")[0]
+                if ":" in host_part:
+                    port = host_part.split(":")[1]
+            except:
+                pass
+        
+        error_msg = (
+            f"Failed to connect to PostgreSQL on port {port}.\n"
+            f"Error: {e}\n\n"
+            f"Troubleshooting steps:\n"
+            f"1. Check if PostgreSQL is running: netstat -an | findstr \":{port}\"\n"
+            f"2. Verify DATABASE_URL in .env file points to correct port\n"
+            f"3. Start PostgreSQL if not running:\n"
+            f"   - Docker: docker compose up -d postgres\n"
+            f"   - Windows Service: net start postgresql-x64-16\n"
+            f"4. Default PostgreSQL port is 5432, but your config shows port {port}\n"
+            f"5. Check DATABASE_URL format: postgresql+asyncpg://user:password@host:port/database"
+        )
+        logger.error(error_msg)
+        raise ConnectionError(error_msg) from e
+    except Exception as e:
+        error_msg = (
+            f"Database initialization failed: {e}\n"
+            f"DATABASE_URL configured: {bool(DATABASE_URL)}\n"
+            f"Check your DATABASE_URL environment variable."
+        )
+        logger.error(error_msg, exc_info=True)
+        raise
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:

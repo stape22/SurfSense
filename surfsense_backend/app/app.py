@@ -15,8 +15,20 @@ from app.users import SECRET, auth_backend, current_active_user, fastapi_users
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Not needed if you setup a migration system like Alembic
-    await create_db_and_tables()
+    """Application lifespan handler. Initializes database on startup."""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Not needed if you setup a migration system like Alembic
+        await create_db_and_tables()
+    except Exception as e:
+        logger.error(
+            f"Failed to initialize database during startup: {e}\n"
+            f"Application will not start. Please fix database connection and restart.",
+            exc_info=True
+        )
+        raise
     yield
 
 

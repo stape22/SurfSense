@@ -123,7 +123,7 @@ const ApiKeyForm = () => {
 							<p className="text-xs text-gray-500">
 								Or get it from your dashboard:{" "}
 								<a
-									href={`${process.env.PLASMO_PUBLIC_BACKEND_URL?.replace('/api/v1', '').replace('/api', '') || 'http://localhost:3001'}/dashboard/api-key`}
+									href={`${process.env.PLASMO_PUBLIC_BACKEND_URL?.replace('/api/v1', '').replace('/api', '') || 'http://localhost:4000'}/dashboard/api-key`}
 									target="_blank"
 									className="text-teal-400 hover:text-teal-300 hover:underline"
 									rel="noopener"

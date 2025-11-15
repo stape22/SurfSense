@@ -16,6 +16,23 @@ logger = logging.getLogger(__name__)
 
 def get_celery_session_maker():
     """Create async session maker for Celery tasks."""
+    if not config.DATABASE_URL:
+        logger.error("DATABASE_URL is not configured! Cannot create database connection.")
+        raise ValueError("DATABASE_URL environment variable is not set")
+    
+    # Log database URL (mask password for security)
+    db_url_display = config.DATABASE_URL
+    if "@" in db_url_display:
+        # Mask password in URL for logging
+        parts = db_url_display.split("@")
+        if ":" in parts[0]:
+            user_pass = parts[0].split("://")[1] if "://" in parts[0] else parts[0]
+            if ":" in user_pass:
+                user, _ = user_pass.split(":", 1)
+                db_url_display = db_url_display.replace(f":{user_pass.split(':')[1]}", ":****")
+    
+    logger.debug(f"Creating database connection with URL: {db_url_display}")
+    
     engine = create_async_engine(
         config.DATABASE_URL,
         poolclass=NullPool,
@@ -124,6 +141,18 @@ async def _check_and_trigger_schedules():
                         f"No task found for connector type {connector.connector_type}"
                     )
 
+        except ConnectionRefusedError as e:
+            logger.error(
+                f"Database connection refused. Is PostgreSQL running? Error: {e!s}\n"
+                f"Check DATABASE_URL: {config.DATABASE_URL.split('@')[1] if '@' in config.DATABASE_URL else 'N/A'}\n"
+                f"Verify PostgreSQL is running and accessible."
+            )
+            await session.rollback()
         except Exception as e:
-            logger.error(f"Error checking periodic schedules: {e!s}", exc_info=True)
+            error_type = type(e).__name__
+            logger.error(
+                f"Error checking periodic schedules ({error_type}): {e!s}\n"
+                f"DATABASE_URL configured: {bool(config.DATABASE_URL)}",
+                exc_info=True
+            )
             await session.rollback()

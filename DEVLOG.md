@@ -122,7 +122,7 @@ This file tracks all development actions, changes, and decisions made during the
 
 ---
 
-### Implementation - Change Frontend Port from 3000 to 3001
+### Implementation - Change Frontend Port from 3000 to 4000
 **Time**: 2024-12-19
 **Action**: Changed default frontend port to avoid conflict with other applications
 **Files Changed**:
@@ -132,12 +132,94 @@ This file tracks all development actions, changes, and decisions made during the
 - `start-dev-simple.ps1`
 - `start-dev.ps1`
 **Changes**:
-- Updated docker-compose.yml default FRONTEND_PORT from 3000 to 3001
+- Updated docker-compose.yml default FRONTEND_PORT from 3000 to 4000
 - Updated Dockerfile to use PORT environment variable with fallback
-- Updated browser extension fallback URL from localhost:3000 to localhost:3001
-- Updated PowerShell startup scripts to set PORT=3001 and display correct port
-- Updated port check in start-dev.ps1 to check for 3001 instead of 3000
-**Reason**: User has another application running on port 3000, needed to change default port to avoid conflicts
+- Updated browser extension fallback URL from localhost:3000 to localhost:4000
+- Updated PowerShell startup scripts to set PORT=4000 and display correct port
+- Updated port check in start-dev.ps1 to check for 4000 instead of 3000
+**Reason**: User has other applications running on ports 3000 and 3001, changed to port 4000 to avoid conflicts
+
+---
+
+### Implementation - Improve Error Handling for Failed Fetch Requests
+**Time**: 2024-12-19
+**Action**: Added better error handling for network/fetch errors in registration and login forms
+**Files Changed**:
+- `surfsense_web/app/(home)/register/page.tsx`
+- `surfsense_web/app/(home)/login/LocalLoginForm.tsx`
+**Changes**:
+- Added validation to check if NEXT_PUBLIC_FASTAPI_BACKEND_URL is configured before making fetch requests
+- Added try-catch around fetch calls to catch network errors
+- Improved error messages to indicate connection issues vs other errors
+- Added specific handling for TypeError fetch errors
+- Better error logging for debugging connection issues
+**Reason**: Users were getting generic "Failed to fetch" errors without clear indication of what went wrong (backend not running, URL not configured, etc.)
+
+---
+
+### Implementation - Enhanced Debugging for Fetch Errors
+**Time**: 2024-12-19
+**Action**: Added detailed console logging and improved error messages for fetch failures
+**Files Changed**:
+- `surfsense_web/app/(home)/register/page.tsx`
+- `surfsense_web/app/(home)/login/LocalLoginForm.tsx`
+- `FRONTEND_BACKEND_CONNECTION.md` (new troubleshooting guide)
+**Changes**:
+- Added console.log statements to show backend URL being used
+- Enhanced error messages with step-by-step troubleshooting instructions
+- Improved TypeError detection for fetch errors
+- Created troubleshooting guide document
+- Better error messages that guide users to check backend status
+**Reason**: Users still experiencing "Failed to fetch" errors need better debugging information to identify root cause
+
+---
+
+### Implementation - Production Build Environment Variable Detection
+**Time**: 2024-12-19
+**Action**: Enhanced error messages to distinguish between development and production build issues
+**Files Changed**:
+- `surfsense_web/app/(home)/register/page.tsx`
+- `surfsense_web/app/(home)/login/LocalLoginForm.tsx`
+- `FIX_FETCH_ERROR.md` (new troubleshooting guide)
+**Changes**:
+- Added more detailed error messages explaining difference between dev and production builds
+- Enhanced console logging to show if env var is undefined vs empty string
+- Created comprehensive troubleshooting guide for "Failed to fetch" errors
+- Better guidance on when to rebuild vs restart dev server
+**Reason**: Production builds require env vars at build time, users need clear instructions on how to fix
+
+---
+
+### Implementation - Improve Celery Database Connection Error Handling
+**Time**: 2024-12-19
+**Action**: Added better error handling and logging for Celery worker database connection failures
+**Files Changed**:
+- `surfsense_backend/app/tasks/celery_tasks/schedule_checker_task.py`
+- `surfsense_backend/app/config/__init__.py`
+**Changes**:
+- Added validation to check if DATABASE_URL is configured before creating connections
+- Enhanced error logging to show masked database URL and connection details
+- Added specific handling for ConnectionRefusedError with helpful messages
+- Added warning in config if DATABASE_URL is not set
+- Better error messages guiding users to check PostgreSQL status
+**Reason**: Celery worker was failing silently with connection errors, needed better diagnostics
+
+---
+
+### Implementation - Improve Backend Database Connection Error Handling
+**Time**: 2024-12-19
+**Action**: Added better error handling for database connection failures during backend startup
+**Files Changed**:
+- `surfsense_backend/app/db.py`
+- `surfsense_backend/app/app.py`
+**Changes**:
+- Enhanced create_db_and_tables() to log database URL (with masked password) before connecting
+- Added specific handling for OSError (connection failures) with port detection
+- Added detailed troubleshooting steps in error messages
+- Improved error messages to show which port is being used
+- Added error handling in lifespan to prevent silent failures
+- Better logging for database initialization success/failure
+**Reason**: Backend was failing to start with unclear error messages when PostgreSQL wasn't running or wrong port was configured
 
 ---
 
