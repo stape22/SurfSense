@@ -47,10 +47,56 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         )
         print(f"User {user.id} has registered.")
 
+    async def forgot_password(
+        self, user: User, request: Request | None = None
+    ) -> str:
+        """Override forgot_password to ensure token is always logged."""
+        print("=" * 80)
+        print("DEBUG: forgot_password method called!")
+        print(f"DEBUG: User email: {user.email}, User ID: {user.id}")
+        print("=" * 80)
+        logger.info(f"forgot_password called for user {user.id} ({user.email})")
+        
+        # Call parent method to generate token
+        try:
+            token = await super().forgot_password(user, request)
+            print("=" * 80)
+            print("DEBUG: Token generated successfully!")
+            print("=" * 80)
+        except Exception as e:
+            print(f"ERROR in super().forgot_password: {e}")
+            logger.error(f"Error calling super().forgot_password: {e}", exc_info=True)
+            raise
+        
+        # Always log the token, regardless of email sending
+        logger.info(
+            f"Password reset requested for user: id={user.id}, email={user.email}"
+        )
+        print("=" * 80)
+        print(f"🔑 PASSWORD RESET TOKEN for user {user.email}:")
+        print(f"   {token}")
+        print("=" * 80)
+        logger.info(f"Reset token generated for user {user.id}: {token}")
+        
+        return token
+
     async def on_after_forgot_password(
         self, user: User, token: str, request: Request | None = None
     ):
-        print(f"User {user.id} has forgot their password. Reset token: {token}")
+        """Called after a user requests a password reset."""
+        try:
+            logger.info(
+                f"on_after_forgot_password hook called for user: id={user.id}, email={user.email}"
+            )
+            print("=" * 80)
+            print(f"🔑 PASSWORD RESET TOKEN (from hook) for user {user.email}:")
+            print(f"   {token}")
+            print("=" * 80)
+            logger.info(f"Reset token from hook for user {user.id}")
+        except Exception as e:
+            logger.error(f"Error in on_after_forgot_password: {e}", exc_info=True)
+            print(f"ERROR in on_after_forgot_password: {e}")
+            raise
 
     async def on_after_request_verify(
         self, user: User, token: str, request: Request | None = None

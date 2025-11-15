@@ -223,3 +223,29 @@ This file tracks all development actions, changes, and decisions made during the
 
 ---
 
+### Implementation - Fix PostgreSQL Connection Error (Stopped Container)
+**Time**: 2025-11-15
+**Action**: Fixed backend startup failure caused by stopped PostgreSQL Docker container
+**Files Changed**:
+- `DEVLOG.md` (this entry)
+**Problem**:
+- Backend server failed to start with error: `Failed to connect to PostgreSQL on port 5433`
+- Error: `[Errno 10061] Connect call failed ('::1', 5433, 0, 0), [Errno 10061] Connect call failed ('127.0.0.1', 5433)`
+- PostgreSQL Docker container (`postgres-surfsense` / `surfsense-db-1`) was stopped
+- Backend `.env` file correctly configured to use `localhost:5433`
+**Root Cause**:
+- PostgreSQL Docker container was not running
+- Container needed to be started with correct port mapping (5433 host -> 5432 container)
+**Solution**:
+1. Started PostgreSQL container using `docker compose up -d db` with `POSTGRES_PORT=5433` environment variable
+2. Verified container is running and port 5433 is listening
+3. Backend can now connect successfully
+**Prevention Tips**:
+- Check PostgreSQL container status before starting backend: `docker ps | findstr postgres` or `docker compose ps db`
+- Verify port is listening: `netstat -an | findstr ":5433"`
+- If container is stopped, start it with: `POSTGRES_PORT=5433 docker compose up -d db`
+- Ensure `.env` file DATABASE_URL matches the port configured in docker-compose.yml
+**Reason**: Users need clear troubleshooting steps when PostgreSQL connection fails, especially when the container is stopped
+
+---
+
