@@ -56,7 +56,7 @@ async def validate_llm_config(
                 "GROQ": "groq",
                 "COHERE": "cohere",
                 "GOOGLE": "gemini",
-                "OLLAMA": "ollama",
+                "OLLAMA": "openai",  # Use OpenAI-compatible format for Ollama
                 "MISTRAL": "mistral",
                 "AZURE_OPENAI": "azure",
                 "OPENROUTER": "openrouter",
@@ -79,7 +79,20 @@ async def validate_llm_config(
 
         # Add optional parameters
         if api_base:
-            litellm_kwargs["api_base"] = api_base
+            # For Ollama, ensure the API base includes /v1 for OpenAI-compatible endpoint
+            if provider == "OLLAMA":
+                # Normalize Ollama API base to include /v1 if not present
+                api_base_normalized = api_base.rstrip("/")
+                if not api_base_normalized.endswith("/v1"):
+                    litellm_kwargs["api_base"] = f"{api_base_normalized}/v1"
+                else:
+                    litellm_kwargs["api_base"] = api_base_normalized
+            else:
+                litellm_kwargs["api_base"] = api_base
+        elif provider == "OLLAMA":
+            # For Ollama, default to OpenAI-compatible endpoint if no api_base specified
+            # Ollama's OpenAI-compatible API is at http://localhost:11434/v1
+            litellm_kwargs["api_base"] = "http://localhost:11434/v1"
 
         # Add any additional litellm parameters
         if litellm_params:
@@ -104,6 +117,12 @@ async def validate_llm_config(
     except Exception as e:
         error_msg = f"Failed to validate LLM configuration: {e!s}"
         logger.error(error_msg)
+        # Log additional details for Ollama errors
+        if provider == "OLLAMA":
+            logger.error(
+                f"Ollama connection details - Model: {model_string}, "
+                f"API Base: {litellm_kwargs.get('api_base', 'not set')}"
+            )
         return False, error_msg
 
 
@@ -182,7 +201,7 @@ async def get_user_llm_instance(
                 "GROQ": "groq",
                 "COHERE": "cohere",
                 "GOOGLE": "gemini",
-                "OLLAMA": "ollama",
+                "OLLAMA": "openai",  # Use OpenAI-compatible format for Ollama
                 "MISTRAL": "mistral",
                 "AZURE_OPENAI": "azure",
                 "OPENROUTER": "openrouter",
@@ -207,7 +226,20 @@ async def get_user_llm_instance(
 
         # Add optional parameters
         if llm_config.api_base:
-            litellm_kwargs["api_base"] = llm_config.api_base
+            # For Ollama, ensure the API base includes /v1 for OpenAI-compatible endpoint
+            if llm_config.provider.value == "OLLAMA":
+                # Normalize Ollama API base to include /v1 if not present
+                api_base_normalized = llm_config.api_base.rstrip("/")
+                if not api_base_normalized.endswith("/v1"):
+                    litellm_kwargs["api_base"] = f"{api_base_normalized}/v1"
+                else:
+                    litellm_kwargs["api_base"] = api_base_normalized
+            else:
+                litellm_kwargs["api_base"] = llm_config.api_base
+        elif llm_config.provider.value == "OLLAMA":
+            # For Ollama, default to OpenAI-compatible endpoint if no api_base specified
+            # Ollama's OpenAI-compatible API is at http://localhost:11434/v1
+            litellm_kwargs["api_base"] = "http://localhost:11434/v1"
 
         # Add any additional litellm parameters
         if llm_config.litellm_params:
